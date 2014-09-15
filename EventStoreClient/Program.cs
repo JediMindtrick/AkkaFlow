@@ -31,13 +31,7 @@ namespace EventStoreClient
             var speaker = system.ActorOf(Props.Create(() => new SpeakerActor(conn, "test-event-2")), "speaker");
 
             speaker.Tell(new EventData { Name = "WrapInt", Data = new WrapInt { Data = 1 }, MetaData = null });
-
-            /*
-            for (int i = 0, l = 10; i < l; i++) {
-                speaker.Tell(new EventData { Name = "WrapInt", Data = new WrapInt { Data = i }, MetaData = null });
-            }
-            */
-
+            
             Console.ReadLine();
         }
     }

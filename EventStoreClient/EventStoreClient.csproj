@@ -63,8 +63,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BlockFactory.cs" />
+    <Compile Include="Messages.cs" />
+    <Compile Include="PrimitiveBlocks.cs" />
     <Compile Include="ProcessBlock.cs" />
-    <Compile Include="ProcessStep.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="EventStoreAdapters.cs" />
