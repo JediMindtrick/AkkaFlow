@@ -16,7 +16,18 @@ namespace EventStoreClient
             
             var sink = system.ActorOf(Props.Create(() => new TransformBlock() ), Guid.NewGuid().ToString());
 
-            var scale = system.ActorOf(Props.Create(() => new ScaleBlock(system, conn)), "scale");
+            Func<ActorRef> scaleTo = () => {
+                //simple action needs to be wrapped in a block
+                var simple = BlockFactory.createSimpleBlock(new List<ActorRef> { BlockFactory.getLogOperation(system, conn) }, system, conn);
+
+                var complex = BlockFactory.getComplexBlock(system, conn);
+
+                var myProcess = BlockFactory.createComplexBlock(new List<ActorRef> { simple, complex });
+
+                return myProcess;            
+            };
+
+            var scale = system.ActorOf(Props.Create(() => new ScaleBlock(scaleTo)), "scale");
 
             sink.Tell(new Messages.SetNext { Next = scale });
 
@@ -31,7 +42,11 @@ namespace EventStoreClient
             var speaker = system.ActorOf(Props.Create(() => new SpeakerActor(conn, "test-event-2")), "speaker");
 
             speaker.Tell(new EventData { Name = "WrapInt", Data = new WrapInt { Data = 1 }, MetaData = null });
-            
+
+            for (int i = 0, l = 10; i < l; i++) {
+                speaker.Tell(new EventData { Name = "WrapInt", Data = new WrapInt { Data = i }, MetaData = null });
+            }
+
             Console.ReadLine();
         }
     }
