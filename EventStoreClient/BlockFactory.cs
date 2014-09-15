@@ -17,12 +17,18 @@ namespace EventStoreClient
 
     public class WrapInt : Wrapper<int> { }
 
-    public class BlockFactory : ProcessBlockAsync<int, int>
+    public class BlockFactory : ProcessOperationAsync<int, int>
     {
 
         private static int counter = 0;
 
-        public static ActorRef getAddBlock(ActorSystem system, EventStore.ClientAPI.IEventStoreConnection conn)
+        public static ActorRef getLogOperation(ActorSystem system, EventStore.ClientAPI.IEventStoreConnection conn)
+        {
+            var log1 = system.ActorOf(Props.Create(() => new LogBlock()), "log" + counter++);
+            return log1;
+        }
+
+        public static ActorRef getLoggingAddBlock(ActorSystem system, EventStore.ClientAPI.IEventStoreConnection conn)
         {
             var log1 = system.ActorOf(Props.Create(() => new LogBlock()), "log" + counter++);
             var add1 = system.ActorOf(Props.Create(() => new AddBlock(1)), "add" + counter++);
@@ -62,9 +68,9 @@ namespace EventStoreClient
         public static ActorRef getComplexBlock(ActorSystem system, EventStore.ClientAPI.IEventStoreConnection conn)
         {
 
-            var block1 = BlockFactory.getAddBlock(system, conn);
-            var block2 = BlockFactory.getAddBlock(system, conn);
-            var block3 = BlockFactory.getAddBlock(system, conn);
+            var block1 = BlockFactory.getLoggingAddBlock(system, conn);
+            var block2 = BlockFactory.getLoggingAddBlock(system, conn);
+            var block3 = BlockFactory.getLoggingAddBlock(system, conn);
 
             return createComplexBlock(new List<ActorRef> { block1, block2, block3 });
         }

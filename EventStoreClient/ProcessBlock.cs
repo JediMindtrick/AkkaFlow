@@ -10,7 +10,7 @@ using EventStoreClient.EventStoreAdapters;
 
 namespace EventStoreClient
 {
-    public class ProcessBlockAsync<T,R> : ReceiveActor
+    public class ProcessOperationAsync<T,R> : ReceiveActor
     {
 
         //head block needs to be special, becuase it needs to have another actor ref to next block
@@ -27,7 +27,7 @@ namespace EventStoreClient
 
         private bool verbose = false;
 
-        public ProcessBlockAsync(){
+        public ProcessOperationAsync(){
 
             Receive<Messages.SetNext>(msg => {
                 if(verbose) Console.WriteLine(this.Self.Path + " -> next -> " + msg.Next.Path);

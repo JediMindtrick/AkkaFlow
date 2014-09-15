@@ -11,7 +11,7 @@ using EventStoreClient.EventStoreAdapters;
 namespace EventStoreClient
 {
 
-    public class HeadBlock : ProcessBlockAsync<object, object>
+    public class HeadBlock : ProcessOperationAsync<object, object>
     {
         public HeadBlock()
         {
@@ -26,7 +26,7 @@ namespace EventStoreClient
         }
     }
 
-    public class AddBlock : ProcessBlockAsync<int, int>
+    public class AddBlock : ProcessOperationAsync<int, int>
     {
         public int howMany { get; set; }
         private int howLong = 2000;
@@ -49,7 +49,7 @@ namespace EventStoreClient
         }
     }
 
-    public class LogBlock : ProcessBlockAsync<object, object>
+    public class LogBlock : ProcessOperationAsync<object, object>
     {
         public LogBlock()
         {
@@ -67,7 +67,7 @@ namespace EventStoreClient
         }
     }
 
-    public class PassBlock : ProcessBlockAsync<object, object>
+    public class PassBlock : ProcessOperationAsync<object, object>
     {
         public PassBlock()
         {
@@ -82,7 +82,7 @@ namespace EventStoreClient
         }
     }
 
-    public class TransformBlock : ProcessBlockAsync<WrapInt, int>
+    public class TransformBlock : ProcessOperationAsync<WrapInt, int>
     {
         public TransformBlock()
         {
@@ -98,7 +98,7 @@ namespace EventStoreClient
         }
     }
 
-    public class ScaleBlock : ProcessBlockAsync<int, object>
+    public class ScaleBlock : ProcessOperationAsync<int, object>
     {
         public ScaleBlock(ActorSystem system, EventStore.ClientAPI.IEventStoreConnection conn)
         {
@@ -106,8 +106,18 @@ namespace EventStoreClient
             {
                 return new Task<object>(() =>
                 {
+                    //simple action needs to be wrapped in a block
+                    var simple = BlockFactory.createSimpleBlock(new List<ActorRef> { BlockFactory.getLogOperation(system, conn) },system,conn);
+                    
+                    var complex = BlockFactory.getComplexBlock(system, conn);
 
-                    var myProcess = BlockFactory.getComplexBlock(system, conn);
+//                    var block1 = BlockFactory.getAddBlock(system, conn);
+  //                  var block2 = BlockFactory.getAddBlock(system, conn);
+    //                var block3 = BlockFactory.getAddBlock(system, conn);
+
+      //              var myProcess = BlockFactory.createComplexBlock(new List<ActorRef> { block1, block2, block3 });
+
+                    var myProcess = BlockFactory.createComplexBlock(new List<ActorRef> { simple, complex });
 
                     myProcess.Tell(input);
 
