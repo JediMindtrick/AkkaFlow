@@ -24,27 +24,38 @@ namespace EventStoreClient
 
         public static ActorRef getAddBlock(ActorSystem system, EventStore.ClientAPI.IEventStoreConnection conn)
         {
+            var log1 = system.ActorOf(Props.Create(() => new LogBlock()), "log" + counter++);
+            var add1 = system.ActorOf(Props.Create(() => new AddBlock(1)), "add" + counter++);
+            var log2 = system.ActorOf(Props.Create(() => new LogBlock()), "log" + counter++);
+
+            var list = new List<ActorRef> { log1, add1, log2 };
+
+            return createSimpleBlock(list, system, conn);
+        }
+
+        public static ActorRef createSimpleBlock(List<ActorRef> list, ActorSystem system, EventStore.ClientAPI.IEventStoreConnection conn)
+        {
 
             var name = "block" + Guid.NewGuid().ToString();
             var head = system.ActorOf(Props.Create(() => new HeadBlock()), name);
 
             var speaker = system.ActorOf(Props.Create(() => new SpeakerActor(conn, name)), "speak" + counter++);
             head.Tell(new Messages.MarkHead { Stream = speaker });
+            
+            joinOps(head, list.First());
 
-            var log1 = system.ActorOf(Props.Create(() => new LogBlock()), "log" + counter++);
-            log1.Tell(new Messages.SetHead { Head = head });
+            for (int i = 0, l = list.Count; i < l; i++)
+            {
+                var _next = i + 1 < list.Count ? list[i + 1] : null;
+                if (_next != null)
+                {
+                    _next.Tell(new Messages.SetHead { Head = head });
+                    joinOps(list[i], _next);
+                }
+            }
 
-            var add1 = system.ActorOf(Props.Create(() => new AddBlock(1)), "add" + counter++);
-            add1.Tell(new Messages.SetHead { Head = head });
-
-            var log2 = system.ActorOf(Props.Create(() => new LogBlock()), "log" + counter++);
-            log2.Tell(new Messages.SetHead { Head = head });
-
-            head = joinOps(head, log1);
-            joinOps(log1, add1);
-            joinOps(add1, log2);
-            head = endBlock(head, log2);
-
+            endBlock(head, list.Last());
+            
             return head;
         }
 
@@ -75,13 +86,13 @@ namespace EventStoreClient
             return head;
         }
 
-        public static ActorRef joinOps(ActorRef first, ActorRef second)
+        private static ActorRef joinOps(ActorRef first, ActorRef second)
         {
             first.Tell(new Messages.SetNext { Next = second });
             return first;
         }
 
-        public static ActorRef endBlock(ActorRef head, ActorRef tail)
+        private static ActorRef endBlock(ActorRef head, ActorRef tail)
         {
             tail.Tell(new Messages.SetNext { Next = head });
             tail.Tell(new Messages.MarkTail());
@@ -89,7 +100,7 @@ namespace EventStoreClient
             return head;
         }
 
-        public static ActorRef joinBlocks(ActorRef first, ActorRef second)
+        private static ActorRef joinBlocks(ActorRef first, ActorRef second)
         {
 
             first.Tell(new Messages.SetNextBlock { NextBlock = second });
